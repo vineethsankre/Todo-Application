@@ -83,11 +83,11 @@ stage('eks deploy'){
  steps {
     withKubeConfig(
       credentialsId: 'kubeconfig',
-      clusterName: 'my-cluster',
-      contextName: 'my-cluster',
+      clusterName: 'my-eks-cluster',
+      contextName: 'my-eks-cluster',
       namespace: 'todons',
       restrictKubeConfigAccess: false,
-      serverUrl: 'https://71EBBEA6021B1F195E6BA6F54211B023.gr7.us-east-1.eks.amazonaws.com'
+      serverUrl: 'https://A869EE7D4BE9A6558221EE008B8FC333.gr7.us-east-1.eks.amazonaws.com'
     ) {
       sh '''
         echo "🚀 Deploying application via Helm..."
