@@ -85,7 +85,7 @@ Create  Amazon linux EC2 Instance to test it locally .
 ```
 yum install git -y
 cd /opt
-git clone https://github.com/jadalaramani/todo_cicd_end-end_project.git
+git clone https://github.com/vineethsankre/Todo-Application.git
 cd todo_cicd_end-end_project/
 cd backend/
 ```
