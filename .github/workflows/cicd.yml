@@ -1,16 +1,16 @@
-name: CI-CD Todo Application
+name: CI/CD Todo Application
 
 on:
   push:
     branches: [ main ]
 
 env:
-  IMAGE_BASE: todo-app
   DOCKER_HUB_USER: vineethsankre
+  IMAGE_BASE: todo-app
   NAMESPACE: todons
 
 jobs:
-  cicd:
+  ci-cd:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,14 +18,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # ---------------- SONARQUBE ----------------
     # ---------------- SONARQUBE SCAN ----------------
     - name: SonarQube Scan
       uses: sonarsource/sonarqube-scan-action@v2
       env:
         SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    
+
     # ---------------- QUALITY GATE ----------------
     - name: SonarQube Quality Gate
       uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
@@ -57,7 +56,7 @@ jobs:
       run: |
         docker push $DOCKER_HUB_USER/$IMAGE_BASE:build-${{ github.run_number }}
 
-    # ---------------- KUBECTL SETUP ----------------
+    # ---------------- KUBECONFIG ----------------
     - name: Configure kubeconfig
       run: |
         mkdir -p ~/.kube
