@@ -1,0 +1,71 @@
+name: CI-CD Todo Application
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  IMAGE_BASE: todo-app
+  DOCKER_HUB_USER: vineethsankre
+  NAMESPACE: todons
+
+jobs:
+  cicd:
+    runs-on: ubuntu-latest
+
+    steps:
+    # ---------------- CHECKOUT ----------------
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # ---------------- SONARQUBE ----------------
+    - name: SonarQube Scan
+      run: |
+        sonar-scanner \
+          -Dsonar.projectKey=todo-app \
+          -Dsonar.sources=. \
+          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
+    # ---------------- DOCKER BUILD ----------------
+    - name: Build Docker Image
+      run: |
+        docker build -t $DOCKER_HUB_USER/$IMAGE_BASE:build-${{ github.run_number }} .
+
+    # ---------------- TRIVY SCAN ----------------
+    - name: Trivy Vulnerability Scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.DOCKER_HUB_USER }}/${{ env.IMAGE_BASE }}:build-${{ github.run_number }}
+        severity: HIGH,CRITICAL
+        exit-code: 1
+
+    # ---------------- DOCKER LOGIN ----------------
+    - name: Login to Docker Hub
+      run: |
+        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
+          -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+    # ---------------- DOCKER PUSH ----------------
+    - name: Push Docker Image
+      run: |
+        docker push $DOCKER_HUB_USER/$IMAGE_BASE:build-${{ github.run_number }}
+
+    # ---------------- KUBECTL SETUP ----------------
+    - name: Configure kubeconfig
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 -d > ~/.kube/config
+
+    # ---------------- EKS DEPLOY ----------------
+    - name: Deploy to EKS using Helm
+      run: |
+        helm upgrade --install todo-release ./helm \
+          --namespace $NAMESPACE \
+          --create-namespace \
+          --set image.repository=$DOCKER_HUB_USER/$IMAGE_BASE \
+          --set image.tag=build-${{ github.run_number }} \
+          --set service.type=LoadBalancer
+
+        sleep 60
+        kubectl get svc -n $NAMESPACE
